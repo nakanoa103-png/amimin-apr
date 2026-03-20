@@ -106,7 +106,7 @@
                         if (match.length > 1) {
                             for (let i = 1; i < match.length; i++) {
                                 // 正規表現の特殊文字を除去してオウム返しに利用
-                                let captured = match[i].trim();
+                                let captured = (match[i] || "").trim();
                                 response = response.replace(new RegExp(`\\{${i-1}\\}`, 'g'), captured);
                             }
                         }
