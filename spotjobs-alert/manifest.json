@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "SPOTJOBS 1kmスナイパー",
+  "version": "1.5.0",
+  "description": "1km未満の案件を検知して通知します",
+  "permissions": ["storage", "notifications"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://app.spot.jobs/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
