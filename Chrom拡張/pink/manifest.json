@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "アミミン・カラーチェンジャー",
+  "version": "1.0",
+  "description": "ページの背景色を変えるテストです",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
