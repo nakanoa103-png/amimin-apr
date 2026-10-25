@@ -1,6 +1,6 @@
 {
-  "edition": "free-en",
-  "version": "1.0.0",
+  "edition": "free-en-links",
+  "version": "1.1.0",
   "lessons": [
     1,
     2,
@@ -13,10 +13,10 @@
   "basicCards": 26,
   "files": {
     "index.html": "f4bf9ea4540cfdccb228294d66ff383c00bd4bd1b09ad1b5742ac3ca3fc61318",
-    "data.js": "70e53a2f43d66bf7c4f0c639962a68a9382dbfa64a5f058502696e1c52cb5eb3",
-    "app.js": "568cc2ad55dee586379109ed3a9ec88b8011f53e391ade725a87b08a4f91c5c4",
+    "data.js": "62e6634d9d8fbe57fd9e13f4d61cc035d5111e57921c3c629d6c1c007fa6feb0",
+    "app.js": "5c0be6889f46dfcc74fef8bba0de4797c8a757ea56b75b7c0e332aa0474ff300",
     "style.css": "1672915b06e76631fba47b86a7b6e873b7f5fcf6a521473a73887a08276cf9de",
     "icon.svg": "924b2ac8191f4486ef69f63bafa8240ed9e26c0c9841f0efdcd2b5193c2c3dd2",
-    "はじめに.txt": "dcb9da229045051af863810ab28d7b0b1bba0e4e796905a702cb28dd800e2c0b"
+    "はじめに.txt": "916ad7199b25a81c48324e45ef39c267027a18b69131e540653495105659c71b"
   }
 }
