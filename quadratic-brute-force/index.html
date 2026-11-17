@@ -101,6 +101,11 @@
   .result strong { color: var(--hit); }
   .note { font-size: 0.85rem; color: var(--muted); margin-top: 6px; }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+  .formula { font-size: 1.05rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .formula input {
+    width: 4.2em; font: inherit; padding: 4px 6px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text); text-align: right;
+  }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
 </style>
 </head>
@@ -110,13 +115,18 @@
 
   <section class="panel">
     <div class="controls">
-      <label>式
+      <label>例
         <select id="eq">
           <option value="0">x² ＋ 5x ＝ 14</option>
           <option value="1">x² ＋ 3x ＝ 10</option>
           <option value="2">x² ＝ 2（整数の答えがない）</option>
+          <option value="custom">自分で入力</option>
         </select>
       </label>
+      <div class="formula">
+        x² ＋ <input type="number" id="b" step="1" value="5" aria-label="x の係数"> x
+        ＝ <input type="number" id="t" step="1" value="14" aria-label="右辺の数">
+      </div>
       <label>順番
         <select id="order">
           <option value="mine">1から上へ、次にマイナスへ</option>
@@ -171,15 +181,16 @@
 
 <script>
   const EQUATIONS = [
-    { label: "x² ＋ 5x", b: 5, target: 14 },
-    { label: "x² ＋ 3x", b: 3, target: 10 },
-    { label: "x²", b: 0, target: 2, note: "整数の中には、答えがなかった。x ＝ 1 なら 1、x ＝ 2 なら 4。答えは、その間にある。本当の答えは ±√2（およそ ±1.414）。整数を順に入れるだけでは、見つからない。" },
+    { b: 5, target: 14 },
+    { b: 3, target: 10 },
+    { b: 0, target: 2 },
   ];
   const MIN = -10, MAX = 10;
   const DELAYS = [1400, 900, 550, 250, 80];
 
   const $ = (id) => document.getElementById(id);
   const eqSel = $("eq"), orderSel = $("order"), speed = $("speed");
+  const bIn = $("b"), tIn = $("t");
   const playBtn = $("play"), stepBtn = $("step"), resetBtn = $("reset");
 
   let order = [], index = 0, tried = new Map(), hits = [], timer = null, current = null;
@@ -187,8 +198,39 @@
   const fmt = (n) => (n < 0 ? "−" + Math.abs(n) : String(n));
   const paren = (n) => (n < 0 ? "（" + fmt(n) + "）" : fmt(n));
 
-  function eq() { return EQUATIONS[Number(eqSel.value)]; }
+  function readInt(input, fallback) {
+    const n = Math.round(Number(input.value));
+    return Number.isFinite(n) && input.value !== "" ? n : fallback;
+  }
+  let current_eq = { b: 5, target: 14 };
+  function eq() { return current_eq; }
   function f(x) { const e = eq(); return x * x + e.b * x; }
+
+  // 左辺を文字にする：x² ＋ 5x、x² − 3x、x²
+  function leftText(b) {
+    if (b === 0) return "x²";
+    const coef = Math.abs(b) === 1 ? "" : Math.abs(b);
+    return `x² ${b < 0 ? "−" : "＋"} ${coef}x`;
+  }
+
+  // 結果の説明。本当の答え（実数解）と、総当たりで見つかった数を比べる
+  function explain() {
+    const { b, target } = eq();
+    const D = b * b + 4 * target;
+    if (D < 0) {
+      return `どんな x を入れても、${leftText(b)} は ${fmt(target)} にならない。この式には、答えになる数（実数）がない。`;
+    }
+    const s = Math.sqrt(D);
+    const roots = D === 0 ? [-b / 2] : [(-b - s) / 2, (-b + s) / 2];
+    const show = (r) => (Number.isInteger(r) ? fmt(r) : fmt(Math.trunc(r * 1000) / 1000) + "…");
+    const notInt = roots.filter((r) => !Number.isInteger(r));
+    const outside = roots.filter((r) => Number.isInteger(r) && (r < MIN || r > MAX));
+    const notes = [];
+    if (notInt.length) notes.push(`${notInt.map(show).join(" と ")} は整数ではないので、整数を順に入れても見つからない。`);
+    if (outside.length) notes.push(`${outside.map(show).join(" と ")} は −10〜10 の外なので、試していない。`);
+    const all = `本当の答えは ${roots.map(show).join(" と ")}。`;
+    return notes.length ? `${all}<br>${notes.join("<br>")}` : "";
+  }
 
   function buildOrder() {
     const xs = [];
@@ -204,7 +246,7 @@
 
   function renderCode(line) {
     const e = eq();
-    const expr = e.b ? `x * x + ${e.b} * x` : "x * x";
+    const expr = e.b === 0 ? "x * x" : `x * x ${e.b < 0 ? "-" : "+"} ${Math.abs(e.b)} * x`;
     const start = orderSel.value === "mine" ? "1, 2, … 10, 0, −1, … −10" : "−10, −9, … 10";
     const lines = [
       `for x in [${start}]:`,
@@ -238,8 +280,8 @@
     const e = eq();
     let yMin = Infinity;
     for (let x = MIN; x <= MAX; x += 0.05) yMin = Math.min(yMin, f(x));
-    yMin = Math.floor(Math.min(yMin, 0) - 4);
-    const yMax = Math.max(e.target * 3, 30);
+    yMin = Math.floor(Math.min(yMin, e.target, 0) - 4);
+    const yMax = Math.max(e.target * 2, e.target + 20, 30);
     const sx = (x) => pad + ((x - MIN) / (MAX - MIN)) * (W - pad * 2);
     const sy = (y) => H - pad - ((y - yMin) / (yMax - yMin)) * (H - pad * 2);
 
@@ -265,7 +307,7 @@
     ctx.beginPath(); ctx.moveTo(pad, sy(e.target)); ctx.lineTo(W - pad, sy(e.target)); ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = css("--now");
-    ctx.fillText("右辺 ＝ " + e.target, W - pad - 100, sy(e.target) - 8);
+    ctx.fillText("右辺 ＝ " + fmt(e.target), W - pad - 110, sy(e.target) - 8);
 
     ctx.save();
     ctx.beginPath(); ctx.rect(pad, pad, W - pad * 2, H - pad * 2); ctx.clip();
@@ -296,7 +338,6 @@
   }
 
   function renderResult(done) {
-    const e = eq();
     const r = $("result");
     if (!done) {
       r.innerHTML = hits.length
@@ -304,10 +345,11 @@
         : `${tried.size}個試した。まだ見つかっていない。`;
       return;
     }
+    const more = explain();
     if (hits.length) {
-      r.innerHTML = `−10〜10の21個を全部試して、答えは <strong>${hits.slice().sort((a, b) => a - b).map(fmt).join(" と ")}</strong>。`;
+      r.innerHTML = `−10〜10の21個を全部試して、見つかった答えは <strong>${hits.slice().sort((a, b) => a - b).map(fmt).join(" と ")}</strong>。` + (more ? `<br>${more}` : "");
     } else {
-      r.innerHTML = `21個を全部試しても、見つからなかった。<br>${e.note || ""}`;
+      r.innerHTML = `21個を全部試しても、見つからなかった。<br>${more}`;
     }
   }
 
@@ -316,14 +358,14 @@
     const sq = x * x, bx = e.b * x, left = sq + bx;
     $("nowX").textContent = "x ＝ " + fmt(x);
     $("calc").textContent = e.b
-      ? `${paren(x)}² ＋ ${e.b} × ${paren(x)} ＝ ${fmt(sq)} ＋ ${paren(bx)} ＝ ${fmt(left)}`
+      ? `${paren(x)}² ＋ ${paren(e.b)} × ${paren(x)} ＝ ${fmt(sq)} ＋ ${paren(bx)} ＝ ${fmt(left)}`
       : `${paren(x)}² ＝ ${fmt(left)}`;
     const v = $("verdict");
     if (left === e.target) {
-      v.textContent = `${e.target} と等しい。答えが見つかった！`;
+      v.textContent = `${fmt(e.target)} と等しい。答えが見つかった！`;
       v.className = "verdict hit";
     } else {
-      v.textContent = `${e.target} ではない。次へ`;
+      v.textContent = `${fmt(e.target)} ではない。次へ`;
       v.className = "verdict miss";
     }
   }
@@ -367,6 +409,7 @@
 
   function reset() {
     stop();
+    current_eq = { b: readInt(bIn, 0), target: readInt(tIn, 0) };
     order = buildOrder();
     index = 0; tried = new Map(); hits = []; current = null;
     $("nowX").textContent = "—";
@@ -385,7 +428,15 @@
   });
   stepBtn.addEventListener("click", () => { stop(); stepOnce(); });
   resetBtn.addEventListener("click", reset);
-  eqSel.addEventListener("change", reset);
+  eqSel.addEventListener("change", () => {
+    const preset = EQUATIONS[Number(eqSel.value)];
+    if (preset) { bIn.value = preset.b; tIn.value = preset.target; }
+    reset();
+  });
+  [bIn, tIn].forEach((input) => input.addEventListener("input", () => {
+    eqSel.value = "custom";
+    reset();
+  }));
   orderSel.addEventListener("change", reset);
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderGraph);
 
