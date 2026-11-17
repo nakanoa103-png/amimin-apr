@@ -47,15 +47,14 @@
     font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
     line-height: 1.6;
   }
-  main { max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; }
-  h1 { font-size: 1.35rem; margin: 0 0 4px; }
-  .lead { color: var(--muted); margin: 0 0 16px; font-size: 0.95rem; }
+  main { max-width: 860px; margin: 0 auto; padding: 14px 16px 32px; }
+  h1 { font-size: 1.3rem; margin: 0 0 10px; }
   .panel {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 12px;
-    padding: 14px;
-    margin-bottom: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
   }
   .controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
   .controls label { font-size: 0.9rem; color: var(--muted); display: flex; gap: 6px; align-items: center; }
@@ -71,12 +70,13 @@
   }
   button.secondary { background: transparent; color: var(--accent); }
   button:disabled { opacity: 0.45; cursor: default; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; margin-bottom: 10px; }
+  .grid .panel { margin-bottom: 0; }
   @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
   .now-box { text-align: center; }
-  .now-x { font-size: 2.2rem; font-weight: 700; color: var(--now); }
-  .calc { font-size: 1.15rem; margin: 4px 0; }
-  .verdict { font-weight: 700; font-size: 1.1rem; min-height: 1.7em; }
+  .now-x { font-size: 2rem; font-weight: 700; color: var(--now); line-height: 1.3; }
+  .calc { font-size: 1.1rem; margin: 2px 0; }
+  .verdict { font-weight: 700; font-size: 1.05rem; min-height: 1.6em; }
   .verdict.hit { color: var(--hit); }
   .verdict.miss { color: var(--miss); }
   pre {
@@ -107,7 +107,6 @@
 <body>
 <main>
   <h1>総当たりで二次方程式を解く</h1>
-  <p class="lead">x に整数を1つずつ入れて、左辺が右辺と等しくなるかを調べる。プログラマ的解決法（笑）の動きを見る。</p>
 
   <section class="panel">
     <div class="controls">
@@ -154,6 +153,11 @@
   </section>
 
   <section class="panel">
+    <h2>結果</h2>
+    <div class="result" id="result">まだ調べていない。</div>
+  </section>
+
+  <section class="panel">
     <h2>グラフで見ると</h2>
     <canvas id="graph" width="800" height="380"></canvas>
     <div class="legend">
@@ -162,11 +166,6 @@
       <span><i style="background:var(--hit)"></i>見つかった答え</span>
     </div>
     <p class="note">曲線と横線が交わるところが、答え。総当たりは、整数のところだけを点で調べている。</p>
-  </section>
-
-  <section class="panel">
-    <h2>結果</h2>
-    <div class="result" id="result">まだ調べていない。</div>
   </section>
 </main>
 
