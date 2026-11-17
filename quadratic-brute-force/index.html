@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>総当たりで二次方程式</title>
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --panel: #ffffff;
+    --text: #22252b;
+    --muted: #6b7280;
+    --line: #e2e0d9;
+    --accent: #2f6fb3;
+    --hit: #1f8a4c;
+    --hit-bg: #e3f4ea;
+    --miss: #b54848;
+    --miss-bg: #f8e9e9;
+    --now: #d98a1c;
+    --code-bg: #1f2430;
+    --code-text: #e6e6e6;
+    --code-now: #3a4560;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181d;
+      --panel: #1f2229;
+      --text: #e8e8ea;
+      --muted: #9aa0aa;
+      --line: #343843;
+      --accent: #6aa4e0;
+      --hit: #4cc282;
+      --hit-bg: #1d3528;
+      --miss: #e07a7a;
+      --miss-bg: #3a2324;
+      --now: #f0aa4a;
+      --code-bg: #12141a;
+      --code-text: #e6e6e6;
+      --code-now: #2c3650;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+    line-height: 1.6;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 1.35rem; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 16px; font-size: 0.95rem; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .controls label { font-size: 0.9rem; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+  select, button, input[type="range"] { font: inherit; }
+  select {
+    padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--text);
+  }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  button {
+    padding: 8px 14px; border-radius: 8px; border: 1px solid var(--accent);
+    background: var(--accent); color: #fff; cursor: pointer; font-size: 0.95rem;
+  }
+  button.secondary { background: transparent; color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: default; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+  .now-box { text-align: center; }
+  .now-x { font-size: 2.2rem; font-weight: 700; color: var(--now); }
+  .calc { font-size: 1.15rem; margin: 4px 0; }
+  .verdict { font-weight: 700; font-size: 1.1rem; min-height: 1.7em; }
+  .verdict.hit { color: var(--hit); }
+  .verdict.miss { color: var(--miss); }
+  pre {
+    margin: 0; background: var(--code-bg); color: var(--code-text);
+    border-radius: 10px; padding: 10px 0; font-size: 0.9rem; overflow-x: auto;
+    font-family: "Consolas", "Menlo", monospace;
+  }
+  pre span { display: block; padding: 1px 14px; white-space: pre; }
+  pre span.cur { background: var(--code-now); }
+  .strip { display: flex; flex-wrap: wrap; gap: 4px; }
+  .cell {
+    width: 34px; height: 34px; border-radius: 6px; border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .cell.miss { background: var(--miss-bg); color: var(--miss); border-color: transparent; }
+  .cell.hit { background: var(--hit-bg); color: var(--hit); border-color: var(--hit); font-weight: 700; }
+  .cell.cur { outline: 3px solid var(--now); outline-offset: 1px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 8px; }
+  h2 { font-size: 1rem; margin: 0 0 8px; }
+  .result { font-size: 1rem; }
+  .result strong { color: var(--hit); }
+  .note { font-size: 0.85rem; color: var(--muted); margin-top: 6px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>総当たりで二次方程式を解く</h1>
+  <p class="lead">x に整数を1つずつ入れて、左辺が右辺と等しくなるかを調べる。プログラマ的解決法（笑）の動きを見る。</p>
+
+  <section class="panel">
+    <div class="controls">
+      <label>式
+        <select id="eq">
+          <option value="0">x² ＋ 5x ＝ 14</option>
+          <option value="1">x² ＋ 3x ＝ 10</option>
+          <option value="2">x² ＝ 2（整数の答えがない）</option>
+        </select>
+      </label>
+      <label>順番
+        <select id="order">
+          <option value="mine">1から上へ、次にマイナスへ</option>
+          <option value="asc">−10から順に</option>
+        </select>
+      </label>
+      <label>速さ
+        <input type="range" id="speed" min="0" max="4" step="1" value="2">
+      </label>
+    </div>
+    <div class="buttons">
+      <button id="play">スタート</button>
+      <button id="step" class="secondary">1つ進める</button>
+      <button id="reset" class="secondary">最初から</button>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="panel now-box">
+      <h2>いま調べている数</h2>
+      <div class="now-x" id="nowX">—</div>
+      <div class="calc" id="calc">スタートを押す</div>
+      <div class="verdict" id="verdict"></div>
+    </section>
+    <section class="panel">
+      <h2>プログラムにすると</h2>
+      <pre id="code"></pre>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>試した数（−10〜10）</h2>
+    <div class="strip" id="strip"></div>
+  </section>
+
+  <section class="panel">
+    <h2>グラフで見ると</h2>
+    <canvas id="graph" width="800" height="420"></canvas>
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>左辺の値</span>
+      <span><i style="background:var(--now)"></i>右辺（目標の値）</span>
+      <span><i style="background:var(--hit)"></i>見つかった答え</span>
+    </div>
+    <p class="note">曲線と横線が交わるところが、答え。総当たりは、整数のところだけを点で調べている。</p>
+  </section>
+
+  <section class="panel">
+    <h2>結果</h2>
+    <div class="result" id="result">まだ調べていない。</div>
+  </section>
+</main>
+
+<script>
+  const EQUATIONS = [
+    { label: "x² ＋ 5x", b: 5, target: 14 },
+    { label: "x² ＋ 3x", b: 3, target: 10 },
+    { label: "x²", b: 0, target: 2, note: "整数の中には、答えがなかった。x ＝ 1 なら 1、x ＝ 2 なら 4。答えは、その間にある。本当の答えは ±√2（およそ ±1.414）。整数を順に入れるだけでは、見つからない。" },
+  ];
+  const MIN = -10, MAX = 10;
+  const DELAYS = [1400, 900, 550, 250, 80];
+
+  const $ = (id) => document.getElementById(id);
+  const eqSel = $("eq"), orderSel = $("order"), speed = $("speed");
+  const playBtn = $("play"), stepBtn = $("step"), resetBtn = $("reset");
+
+  let order = [], index = 0, tried = new Map(), hits = [], timer = null, current = null;
+
+  const fmt = (n) => (n < 0 ? "−" + Math.abs(n) : String(n));
+  const paren = (n) => (n < 0 ? "（" + fmt(n) + "）" : fmt(n));
+
+  function eq() { return EQUATIONS[Number(eqSel.value)]; }
+  function f(x) { const e = eq(); return x * x + e.b * x; }
+
+  function buildOrder() {
+    const xs = [];
+    if (orderSel.value === "mine") {
+      for (let x = 1; x <= MAX; x++) xs.push(x);
+      xs.push(0);
+      for (let x = -1; x >= MIN; x--) xs.push(x);
+    } else {
+      for (let x = MIN; x <= MAX; x++) xs.push(x);
+    }
+    return xs;
+  }
+
+  function renderCode(line) {
+    const e = eq();
+    const expr = e.b ? `x * x + ${e.b} * x` : "x * x";
+    const start = orderSel.value === "mine" ? "1, 2, … 10, 0, −1, … −10" : "−10, −9, … 10";
+    const lines = [
+      `for x in [${start}]:`,
+      `    left = ${expr}`,
+      `    if left == ${e.target}:`,
+      `        print("答え", x)`,
+    ];
+    $("code").innerHTML = lines
+      .map((t, i) => `<span class="${i === line ? "cur" : ""}">${t.replace(/</g, "&lt;")}</span>`)
+      .join("");
+  }
+
+  function renderStrip() {
+    const strip = $("strip");
+    strip.innerHTML = "";
+    for (let x = MIN; x <= MAX; x++) {
+      const d = document.createElement("div");
+      d.className = "cell";
+      if (tried.has(x)) d.classList.add(tried.get(x) ? "hit" : "miss");
+      if (x === current) d.classList.add("cur");
+      d.textContent = fmt(x);
+      strip.appendChild(d);
+    }
+  }
+
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function renderGraph() {
+    const c = $("graph"), ctx = c.getContext("2d");
+    const W = c.width, H = c.height, pad = 36;
+    const e = eq();
+    let yMin = Infinity;
+    for (let x = MIN; x <= MAX; x += 0.05) yMin = Math.min(yMin, f(x));
+    yMin = Math.floor(Math.min(yMin, 0) - 4);
+    const yMax = Math.max(e.target * 3, 30);
+    const sx = (x) => pad + ((x - MIN) / (MAX - MIN)) * (W - pad * 2);
+    const sy = (y) => H - pad - ((y - yMin) / (yMax - yMin)) * (H - pad * 2);
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = css("--panel");
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = css("--line");
+    ctx.lineWidth = 1;
+    ctx.font = "13px sans-serif";
+    ctx.fillStyle = css("--muted");
+    for (let x = MIN; x <= MAX; x += 2) {
+      ctx.beginPath(); ctx.moveTo(sx(x), pad); ctx.lineTo(sx(x), H - pad); ctx.stroke();
+      ctx.fillText(fmt(x), sx(x) - 8, H - pad + 18);
+    }
+    ctx.strokeStyle = css("--muted");
+    ctx.beginPath(); ctx.moveTo(sx(0), pad); ctx.lineTo(sx(0), H - pad); ctx.stroke();
+    if (yMin < 0) { ctx.beginPath(); ctx.moveTo(pad, sy(0)); ctx.lineTo(W - pad, sy(0)); ctx.stroke(); }
+
+    ctx.strokeStyle = css("--now");
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(pad, sy(e.target)); ctx.lineTo(W - pad, sy(e.target)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = css("--now");
+    ctx.fillText("右辺 ＝ " + e.target, W - pad - 70, sy(e.target) - 6);
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pad, pad, W - pad * 2, H - pad * 2); ctx.clip();
+    ctx.strokeStyle = css("--accent");
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    let first = true;
+    for (let x = MIN; x <= MAX; x += 0.05) {
+      const px = sx(x), py = sy(f(x));
+      if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    tried.forEach((ok, x) => {
+      ctx.beginPath();
+      ctx.arc(sx(x), sy(f(x)), ok ? 8 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = ok ? css("--hit") : css("--miss");
+      ctx.fill();
+    });
+    if (current !== null) {
+      ctx.beginPath();
+      ctx.arc(sx(current), sy(f(current)), 11, 0, Math.PI * 2);
+      ctx.strokeStyle = css("--now");
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function renderResult(done) {
+    const e = eq();
+    const r = $("result");
+    if (!done) {
+      r.innerHTML = hits.length
+        ? `ここまでに見つかった答え：<strong>${hits.map(fmt).join("、")}</strong>（${tried.size}個試した）`
+        : `${tried.size}個試した。まだ見つかっていない。`;
+      return;
+    }
+    if (hits.length) {
+      r.innerHTML = `−10〜10の21個を全部試して、答えは <strong>${hits.slice().sort((a, b) => a - b).map(fmt).join(" と ")}</strong>。`;
+    } else {
+      r.innerHTML = `21個を全部試しても、見つからなかった。<br>${e.note || ""}`;
+    }
+  }
+
+  function showCurrent(x) {
+    const e = eq();
+    const sq = x * x, bx = e.b * x, left = sq + bx;
+    $("nowX").textContent = "x ＝ " + fmt(x);
+    $("calc").textContent = e.b
+      ? `${paren(x)}² ＋ ${e.b} × ${paren(x)} ＝ ${fmt(sq)} ＋ ${paren(bx)} ＝ ${fmt(left)}`
+      : `${paren(x)}² ＝ ${fmt(left)}`;
+    const v = $("verdict");
+    if (left === e.target) {
+      v.textContent = `${e.target} と等しい。答えが見つかった！`;
+      v.className = "verdict hit";
+    } else {
+      v.textContent = `${e.target} ではない。次へ`;
+      v.className = "verdict miss";
+    }
+  }
+
+  function stepOnce() {
+    if (index >= order.length) { finish(); return false; }
+    const x = order[index++];
+    current = x;
+    const ok = f(x) === eq().target;
+    tried.set(x, ok);
+    if (ok) hits.push(x);
+    showCurrent(x);
+    renderCode(ok ? 3 : 2);
+    renderStrip();
+    renderGraph();
+    renderResult(false);
+    if (index >= order.length) { finish(); return false; }
+    return true;
+  }
+
+  function finish() {
+    stop();
+    current = null;
+    renderStrip();
+    renderGraph();
+    renderCode(-1);
+    renderResult(true);
+    playBtn.disabled = true;
+    stepBtn.disabled = true;
+  }
+
+  function loop() {
+    if (stepOnce()) timer = setTimeout(loop, DELAYS[Number(speed.value)]);
+  }
+
+  function stop() {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    playBtn.textContent = index > 0 && index < order.length ? "つづける" : "スタート";
+  }
+
+  function reset() {
+    stop();
+    order = buildOrder();
+    index = 0; tried = new Map(); hits = []; current = null;
+    $("nowX").textContent = "—";
+    $("calc").textContent = "スタートを押す";
+    $("verdict").textContent = ""; $("verdict").className = "verdict";
+    playBtn.disabled = false; stepBtn.disabled = false;
+    playBtn.textContent = "スタート";
+    renderCode(-1); renderStrip(); renderGraph();
+    $("result").textContent = "まだ調べていない。";
+  }
+
+  playBtn.addEventListener("click", () => {
+    if (timer) { stop(); return; }
+    playBtn.textContent = "とめる";
+    loop();
+  });
+  stepBtn.addEventListener("click", () => { stop(); stepOnce(); });
+  resetBtn.addEventListener("click", reset);
+  eqSel.addEventListener("change", reset);
+  orderSel.addEventListener("change", reset);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderGraph);
+
+  reset();
+</script>
+</body>
+</html>
