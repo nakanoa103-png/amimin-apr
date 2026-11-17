@@ -95,7 +95,7 @@
   .cell.miss { background: var(--miss-bg); color: var(--miss); border-color: transparent; }
   .cell.hit { background: var(--hit-bg); color: var(--hit); border-color: var(--hit); font-weight: 700; }
   .cell.cur { outline: 3px solid var(--now); outline-offset: 1px; }
-  canvas { width: 100%; height: auto; display: block; border-radius: 8px; }
+  canvas { width: 100%; max-width: 520px; height: auto; display: block; margin: 0 auto; border-radius: 8px; }
   h2 { font-size: 1rem; margin: 0 0 8px; }
   .result { font-size: 1rem; }
   .result strong { color: var(--hit); }
@@ -155,7 +155,7 @@
 
   <section class="panel">
     <h2>グラフで見ると</h2>
-    <canvas id="graph" width="800" height="420"></canvas>
+    <canvas id="graph" width="800" height="380"></canvas>
     <div class="legend">
       <span><i style="background:var(--accent)"></i>左辺の値</span>
       <span><i style="background:var(--now)"></i>右辺（目標の値）</span>
@@ -250,11 +250,11 @@
 
     ctx.strokeStyle = css("--line");
     ctx.lineWidth = 1;
-    ctx.font = "13px sans-serif";
+    ctx.font = "19px sans-serif";
     ctx.fillStyle = css("--muted");
     for (let x = MIN; x <= MAX; x += 2) {
       ctx.beginPath(); ctx.moveTo(sx(x), pad); ctx.lineTo(sx(x), H - pad); ctx.stroke();
-      ctx.fillText(fmt(x), sx(x) - 8, H - pad + 18);
+      ctx.fillText(fmt(x), sx(x) - 10, H - pad + 24);
     }
     ctx.strokeStyle = css("--muted");
     ctx.beginPath(); ctx.moveTo(sx(0), pad); ctx.lineTo(sx(0), H - pad); ctx.stroke();
@@ -266,7 +266,7 @@
     ctx.beginPath(); ctx.moveTo(pad, sy(e.target)); ctx.lineTo(W - pad, sy(e.target)); ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = css("--now");
-    ctx.fillText("右辺 ＝ " + e.target, W - pad - 70, sy(e.target) - 6);
+    ctx.fillText("右辺 ＝ " + e.target, W - pad - 100, sy(e.target) - 8);
 
     ctx.save();
     ctx.beginPath(); ctx.rect(pad, pad, W - pad * 2, H - pad * 2); ctx.clip();
